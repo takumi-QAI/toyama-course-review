@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  name      String
+  password  String
+  reviews   Review[]
+  textbooks Textbook[]
+  createdAt DateTime   @default(now())
+}
+
+model Faculty {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
+model Course {
+  id          String     @id @default(cuid())
+  name        String
+  instructor  String
+  faculty     Faculty    @relation(fields: [facultyId], references: [id])
+  facultyId   String
+  year        Int
+  semester    String
+  credits     Int
+  courseType  String
+  reviews     Review[]
+  textbooks   Textbook[]
+  summary     String?
+  summaryAt   DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([facultyId])
+  @@index([name])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  content   String
+  easyScore Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+}
+
+model Textbook {
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  isbn        String?
+  price       Int
+  condition   String
+  description String?
+  status      String   @default("available")
+  contact     String
+  seller      User     @relation(fields: [sellerId], references: [id])
+  sellerId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  createdAt   DateTime @default(now())
+
+  @@index([courseId])
+}
