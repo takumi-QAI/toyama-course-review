@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SessionProvider from "@/components/SessionProvider";
 import Analytics from "@/components/Analytics";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "富大口コミ - 富山大学授業口コミサイト",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Analytics />
           <Navbar />
           <main className="min-h-screen">{children}</main>
+          <VercelAnalytics />
           <footer className="bg-gray-800 text-gray-400 text-center py-6 text-sm mt-16">
             <p>© 2026 富大口コミ - 富山大学授業口コミサイト</p>
             <p className="mt-1 text-xs">このサイトは学生による非公式のサービスです</p>
