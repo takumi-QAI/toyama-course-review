@@ -12,24 +12,31 @@ export default function CoursesPage() {
   const [facultyId, setFacultyId] = useState("");
   const [semester, setSemester] = useState("");
   const [year, setYear] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchCourses = useCallback(async () => {
+  const fetchCourses = useCallback(async (p = 1) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (facultyId) params.set("facultyId", facultyId);
     if (semester) params.set("semester", semester);
     if (year) params.set("year", year);
+    params.set("page", String(p));
 
     const res = await fetch(`/api/courses?${params}`);
     const data = await res.json();
     setCourses(data.courses);
     setFaculties(data.faculties);
+    setTotal(data.total);
+    setTotalPages(data.totalPages);
+    setPage(p);
     setLoading(false);
   }, [query, facultyId, semester, year]);
 
   useEffect(() => {
-    const t = setTimeout(fetchCourses, 300);
+    const t = setTimeout(() => fetchCourses(1), 300);
     return () => clearTimeout(t);
   }, [fetchCourses]);
 
@@ -84,7 +91,7 @@ export default function CoursesPage() {
 
       {loading ? (
         <div className="text-center py-16 text-gray-500">
-          <div className="text-3xl mb-3">⏳</div>
+          <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-3" />
           <p>読み込み中...</p>
         </div>
       ) : courses.length === 0 ? (
@@ -94,12 +101,37 @@ export default function CoursesPage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">{courses.length}件の授業</p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p className="text-sm text-gray-500 mb-4">
+            {total.toLocaleString()}件中 {(page - 1) * 30 + 1}〜{Math.min(page * 30, total)}件を表示
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {courses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => fetchCourses(page - 1)}
+                disabled={page <= 1}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← 前へ
+              </button>
+              <span className="text-sm text-gray-600 px-2">
+                {page} / {totalPages}ページ
+              </span>
+              <button
+                onClick={() => fetchCourses(page + 1)}
+                disabled={page >= totalPages}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                次へ →
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
