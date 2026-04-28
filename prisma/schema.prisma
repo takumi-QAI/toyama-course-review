@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  name      String
-  password  String
-  reviews   Review[]
-  textbooks Textbook[]
-  createdAt DateTime   @default(now())
+  id            String               @id @default(cuid())
+  email         String               @unique
+  name          String
+  password      String
+  reviews       Review[]
+  textbooks     Textbook[]
+  contributions CourseContribution[]
+  createdAt     DateTime             @default(now())
 }
 
 model Faculty {
@@ -24,20 +25,22 @@ model Faculty {
 }
 
 model Course {
-  id          String     @id @default(cuid())
-  name        String
-  instructor  String
-  faculty     Faculty    @relation(fields: [facultyId], references: [id])
-  facultyId   String
-  year        Int
-  semester    String
-  credits     Int
-  courseType  String
-  reviews     Review[]
-  textbooks   Textbook[]
-  summary     String?
-  summaryAt   DateTime?
-  createdAt   DateTime   @default(now())
+  id            String               @id @default(cuid())
+  name          String
+  instructor    String
+  faculty       Faculty              @relation(fields: [facultyId], references: [id])
+  facultyId     String
+  year          Int
+  semester      String
+  credits       Int
+  courseType    String
+  syllabusCode  String?
+  reviews       Review[]
+  textbooks     Textbook[]
+  contributions CourseContribution[]
+  summary       String?
+  summaryAt     DateTime?
+  createdAt     DateTime             @default(now())
 
   @@index([facultyId])
   @@index([name])
@@ -73,4 +76,36 @@ model Textbook {
   createdAt   DateTime @default(now())
 
   @@index([courseId])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model CourseContribution {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  field     String
+  value     String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+  @@index([approved])
 }

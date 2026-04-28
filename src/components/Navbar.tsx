@@ -7,6 +7,7 @@ import { useState } from "react";
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
   return (
     <nav className="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
@@ -19,6 +20,14 @@ export default function Navbar() {
           <Link href="/courses" className="text-sm hover:text-blue-200 transition-colors">
             授業一覧
           </Link>
+          <Link href="/contact" className="text-sm hover:text-blue-200 transition-colors">
+            お問い合わせ
+          </Link>
+          {isAdmin && (
+            <Link href="/admin" className="text-sm text-yellow-300 hover:text-yellow-100 transition-colors">
+              管理
+            </Link>
+          )}
           {session ? (
             <div className="flex items-center gap-4">
               <span className="text-sm text-blue-200">{session.user?.name}</span>
@@ -31,10 +40,7 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link
-                href="/auth/signin"
-                className="text-sm hover:text-blue-200 transition-colors"
-              >
+              <Link href="/auth/signin" className="text-sm hover:text-blue-200 transition-colors">
                 ログイン
               </Link>
               <Link
@@ -65,6 +71,14 @@ export default function Navbar() {
           <Link href="/courses" className="block py-2 text-sm hover:text-blue-200" onClick={() => setMenuOpen(false)}>
             授業一覧
           </Link>
+          <Link href="/contact" className="block py-2 text-sm hover:text-blue-200" onClick={() => setMenuOpen(false)}>
+            お問い合わせ
+          </Link>
+          {isAdmin && (
+            <Link href="/admin" className="block py-2 text-sm text-yellow-300 hover:text-yellow-100" onClick={() => setMenuOpen(false)}>
+              管理
+            </Link>
+          )}
           {session ? (
             <>
               <p className="text-sm text-blue-300">{session.user?.name}</p>

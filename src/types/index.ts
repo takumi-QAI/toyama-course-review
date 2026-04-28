@@ -12,6 +12,7 @@ export interface Course {
   semester: string;
   credits: number;
   courseType: string;
+  syllabusCode?: string | null;
   summary?: string | null;
   summaryAt?: Date | null;
   _count?: { reviews: number };
@@ -40,4 +41,24 @@ export interface Textbook {
   seller: { id: string; name: string };
   courseId: string;
   createdAt: Date;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface CourseContribution {
+  id: string;
+  courseId: string;
+  field: string;
+  value: string;
+  approved: boolean;
+  createdAt: string;
+  course: { name: string };
+  user: { name: string; email: string };
 }

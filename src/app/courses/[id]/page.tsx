@@ -6,7 +6,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import StarRating, { StarDisplay } from "@/components/StarRating";
 import ReviewCard from "@/components/ReviewCard";
+import AdUnit from "@/components/AdUnit";
 import type { Course, Review } from "@/types";
+
+const COURSE_TYPES = ["必修", "選択必修", "選択"] as const;
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +27,11 @@ export default function CourseDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const [contributeOpen, setContributeOpen] = useState(false);
+  const [contributeValue, setContributeValue] = useState("");
+  const [contributeSubmitting, setContributeSubmitting] = useState(false);
+  const [contributeMsg, setContributeMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -90,6 +98,26 @@ export default function CourseDetailPage() {
 
   const alreadyReviewed = session && reviews.some((r) => r.user.id === session.user?.id);
 
+  async function handleContribute(e: React.FormEvent) {
+    e.preventDefault();
+    if (!contributeValue) return;
+    setContributeSubmitting(true);
+    setContributeMsg(null);
+    const res = await fetch(`/api/courses/${id}/contribute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ field: "courseType", value: contributeValue }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setContributeMsg("提案を送信しました。管理者が確認後に反映されます。");
+      setContributeOpen(false);
+    } else {
+      setContributeMsg(data.error);
+    }
+    setContributeSubmitting(false);
+  }
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center text-gray-500">
@@ -131,8 +159,17 @@ export default function CourseDetailPage() {
           <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
             {course.credits}単位
           </span>
-          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full flex items-center gap-1">
             {course.courseType}
+            {session && (
+              <button
+                onClick={() => { setContributeOpen(!contributeOpen); setContributeMsg(null); }}
+                className="text-gray-400 hover:text-blue-500 transition-colors ml-0.5"
+                title="区分を訂正する"
+              >
+                ✏️
+              </button>
+            )}
           </span>
         </div>
 
@@ -152,6 +189,37 @@ export default function CourseDetailPage() {
           </Link>
         </div>
       </div>
+
+      {/* Contribution form */}
+      {contributeOpen && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <p className="text-sm font-medium text-blue-800 mb-2">授業区分を訂正する</p>
+          <form onSubmit={handleContribute} className="flex items-center gap-2 flex-wrap">
+            <select
+              value={contributeValue}
+              onChange={(e) => setContributeValue(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-blue-300 text-sm bg-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="">選択してください</option>
+              {COURSE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <button
+              type="submit"
+              disabled={!contributeValue || contributeSubmitting}
+              className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              提案する
+            </button>
+          </form>
+          {contributeMsg && <p className="text-xs text-blue-700 mt-2">{contributeMsg}</p>}
+        </div>
+      )}
+      {contributeMsg && !contributeOpen && (
+        <p className="text-xs text-green-600 mb-4">{contributeMsg}</p>
+      )}
+
+      {/* Ad */}
+      <AdUnit slot="1234567890" format="horizontal" className="mb-6 min-h-[90px]" />
 
       {/* AI Summary */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-5 mb-6">
