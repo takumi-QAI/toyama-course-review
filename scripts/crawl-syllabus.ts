@@ -59,7 +59,7 @@ function httpGet(url: string, cookies: string): Promise<{ html: string; status: 
       const setCookies = (res.headers["set-cookie"] || []).map((c: string) => c.split(";")[0]);
       res.setEncoding("utf8");
       res.on("data", (c: string) => { data += c; });
-      res.on("end", () => resolve({ html: data, status: res.statusCode, setCookies }));
+      res.on("end", () => resolve({ html: data, status: res.statusCode ?? 0, setCookies }));
     });
     req.on("error", reject);
     req.end();
@@ -88,7 +88,7 @@ function httpPost(url: string, cookies: string, body: string): Promise<{ html: s
       const location = res.headers["location"] as string | undefined;
       res.setEncoding("utf8");
       res.on("data", (c) => { data += c; });
-      res.on("end", () => resolve({ html: data, status: res.statusCode, setCookies, location }));
+      res.on("end", () => resolve({ html: data, status: res.statusCode ?? 0, setCookies, location }));
     });
     req.on("error", reject);
     req.write(body);
@@ -223,7 +223,7 @@ function httpGetWithLocation(url: string, cookies: string): Promise<{ html: stri
       const location = res.headers["location"] as string | undefined;
       res.setEncoding("utf8");
       res.on("data", (c) => { data += c; });
-      res.on("end", () => resolve({ html: data, status: res.statusCode, setCookies, location }));
+      res.on("end", () => resolve({ html: data, status: res.statusCode ?? 0, setCookies, location }));
     });
     req.on("error", reject);
     req.end();
