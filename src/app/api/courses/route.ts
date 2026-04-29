@@ -24,7 +24,7 @@ export async function GET(req: Request) {
         : {},
       facultyId ? { facultyId } : {},
       department ? { department: { contains: department, mode: "insensitive" as const } } : {},
-      semester ? { semester } : {},
+      semester ? { semester: { contains: semester } } : {},
       year ? { year: parseInt(year) } : {},
     ],
   };
@@ -72,11 +72,23 @@ export async function GET(req: Request) {
       }).then((rows) => rows.map((r) => r.department).filter(Boolean) as string[])
     : [];
 
+  // 複合ターム（第3・第4ターム）を個別に展開してドロップダウン用リストを生成
+  const semesterSet = new Set<string>();
+  for (const { semester: s } of semesters) {
+    if (!s) continue;
+    const parts = s.match(/第[0-9０-９]+ターム/g);
+    if (parts) {
+      parts.forEach((p) => semesterSet.add(p));
+    } else {
+      semesterSet.add(s);
+    }
+  }
+
   return NextResponse.json({
     courses: coursesWithAvg,
     faculties,
     departments,
-    semesters: semesters.map((s) => s.semester).filter(Boolean),
+    semesters: Array.from(semesterSet).sort(),
     total,
     page,
     pageSize: PAGE_SIZE,
