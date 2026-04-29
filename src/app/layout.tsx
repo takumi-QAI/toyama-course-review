@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja" className={inter.variable}>
       <head>
+        <meta name="google-adsense-account" content="ca-pub-2137582232537319" />
         {adsenseId && (
           <Script
             async
