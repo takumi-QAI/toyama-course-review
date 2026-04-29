@@ -35,6 +35,9 @@ model Course {
   credits       Int
   courseType    String
   syllabusCode  String?
+  syllabusJscd  String?
+  syllabusYear  Int?
+  department    String?
   reviews       Review[]
   textbooks     Textbook[]
   contributions CourseContribution[]

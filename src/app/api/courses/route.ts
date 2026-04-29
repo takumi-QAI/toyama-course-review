@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q") || "";
   const facultyId = searchParams.get("facultyId") || "";
+  const department = searchParams.get("department") || "";
   const semester = searchParams.get("semester") || "";
   const year = searchParams.get("year") || "";
   const page = parseInt(searchParams.get("page") || "1");
@@ -22,12 +23,13 @@ export async function GET(req: Request) {
           }
         : {},
       facultyId ? { facultyId } : {},
+      department ? { department: { contains: department, mode: "insensitive" as const } } : {},
       semester ? { semester } : {},
       year ? { year: parseInt(year) } : {},
     ],
   };
 
-  const [courses, total, faculties, reviewAggregates] = await Promise.all([
+  const [courses, total, faculties, reviewAggregates, semesters] = await Promise.all([
     prisma.course.findMany({
       where,
       include: {
@@ -44,6 +46,11 @@ export async function GET(req: Request) {
       by: ["courseId"],
       _avg: { easyScore: true },
     }),
+    prisma.course.findMany({
+      select: { semester: true },
+      distinct: ["semester"],
+      orderBy: { semester: "asc" },
+    }),
   ]);
 
   const avgMap = Object.fromEntries(
@@ -55,9 +62,21 @@ export async function GET(req: Request) {
     avgEasyScore: avgMap[course.id] ?? null,
   }));
 
+  // 選択学部の学科一覧
+  const departments = facultyId
+    ? await prisma.course.findMany({
+        where: { facultyId, department: { not: null } },
+        select: { department: true },
+        distinct: ["department"],
+        orderBy: { department: "asc" },
+      }).then((rows) => rows.map((r) => r.department).filter(Boolean) as string[])
+    : [];
+
   return NextResponse.json({
     courses: coursesWithAvg,
     faculties,
+    departments,
+    semesters: semesters.map((s) => s.semester).filter(Boolean),
     total,
     page,
     pageSize: PAGE_SIZE,

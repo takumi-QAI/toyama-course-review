@@ -7,9 +7,12 @@ import type { Course, Faculty } from "@/types";
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [facultyId, setFacultyId] = useState("");
+  const [department, setDepartment] = useState("");
   const [semester, setSemester] = useState("");
   const [year, setYear] = useState("");
   const [page, setPage] = useState(1);
@@ -21,6 +24,7 @@ export default function CoursesPage() {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (facultyId) params.set("facultyId", facultyId);
+    if (department) params.set("department", department);
     if (semester) params.set("semester", semester);
     if (year) params.set("year", year);
     params.set("page", String(p));
@@ -29,16 +33,24 @@ export default function CoursesPage() {
     const data = await res.json();
     setCourses(data.courses);
     setFaculties(data.faculties);
+    setDepartments(data.departments || []);
+    if (data.semesters?.length > 0) setSemesters(data.semesters);
     setTotal(data.total);
     setTotalPages(data.totalPages);
     setPage(p);
     setLoading(false);
-  }, [query, facultyId, semester, year]);
+  }, [query, facultyId, department, semester, year]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchCourses(1), 300);
     return () => clearTimeout(t);
   }, [fetchCourses]);
+
+  // 学部変更時に学科リセット
+  function handleFacultyChange(val: string) {
+    setFacultyId(val);
+    setDepartment("");
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -46,18 +58,18 @@ export default function CoursesPage() {
 
       {/* Search & Filter */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3">
           <input
             type="text"
             placeholder="授業名・担当教員名で検索..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm"
           />
           <div className="flex gap-2 flex-wrap">
             <select
               value={facultyId}
-              onChange={(e) => setFacultyId(e.target.value)}
+              onChange={(e) => handleFacultyChange(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 text-sm bg-white"
             >
               <option value="">全学部</option>
@@ -65,23 +77,38 @@ export default function CoursesPage() {
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
+
+            {departments.length > 0 && (
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 text-sm bg-white"
+              >
+                <option value="">全学科</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            )}
+
             <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 text-sm bg-white"
             >
               <option value="">全学期</option>
-              <option value="前期">前期</option>
-              <option value="後期">後期</option>
-              <option value="通年">通年</option>
+              {semesters.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
+
             <select
               value={year}
               onChange={(e) => setYear(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 text-sm bg-white"
             >
               <option value="">全学年</option>
-              {[1, 2, 3, 4].map((y) => (
+              {[1, 2, 3, 4, 5, 6].map((y) => (
                 <option key={y} value={y}>{y}年生</option>
               ))}
             </select>
@@ -110,7 +137,6 @@ export default function CoursesPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2">
               <button

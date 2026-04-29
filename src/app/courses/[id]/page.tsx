@@ -181,12 +181,24 @@ export default function CourseDetailPage() {
             score={course.avgEasyScore ?? null}
             count={course._count?.reviews ?? 0}
           />
-          <Link
-            href={`/courses/${id}/textbooks`}
-            className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            📚 教科書お譲りを見る
-          </Link>
+          <div className="flex gap-2 flex-wrap">
+            {course.syllabusCode && course.syllabusJscd && (
+              <a
+                href={`https://www.new-syllabus.adm.u-toyama.ac.jp/syllabus/${course.syllabusYear ?? 2026}/${course.syllabusJscd}/${course.syllabusJscd}_${course.syllabusCode}.html`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                📄 シラバスを見る
+              </a>
+            )}
+            <Link
+              href={`/courses/${id}/textbooks`}
+              className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              📚 教科書お譲りを見る
+            </Link>
+          </div>
         </div>
       </div>
 

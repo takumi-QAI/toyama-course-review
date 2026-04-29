@@ -281,11 +281,11 @@ interface CourseDetail {
   credits: number;
   courseType: string;
   facultyName: string;
+  department: string;
 }
 
 function parseCourseDetail(html: string): CourseDetail | null {
   const getValue = (key: string): string => {
-    // <th>key</th><td>value</td> パターン
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const m = html.match(
       new RegExp(`<th[^>]*>[^<]*${escaped}[^<]*<\/th>\\s*<td[^>]*>([\\s\\S]*?)<\/td>`, "i")
@@ -293,24 +293,23 @@ function parseCourseDetail(html: string): CourseDetail | null {
     return m ? stripHtml(m[1]) : "";
   };
 
-  // 科目名 (日本語部分を取得 "名前／English Name" → "名前")
+  // 科目名 (日本語部分 "名前／English" → "名前")
   const rawName = getValue("科目名");
   const name = rawName.split("／")[0].trim();
   if (!name) return null;
 
-  // 担当教員 (所属を除いて名前のみ)
+  // 担当教員 (所属を除く)
   const rawInstructor = getValue("担当教員");
   const instructor = rawInstructor.split(/[（(]/)[0].trim();
   if (!instructor) return null;
 
-  // 学期
+  // 学期 (生の値をそのまま保持: 前期/後期/通年/前期集中/後期集中 etc.)
   const rawSemester = getValue("開講学期");
-  const semester = rawSemester.includes("後期") ? "後期"
-    : rawSemester.includes("前期") ? "前期"
-    : rawSemester.includes("通年") ? "通年"
-    : "前期";
+  // "2026年度／Academic Year 前期／Spring" → "前期"
+  const semesterMatch = rawSemester.match(/(前期集中|後期集中|前期・後期|前期|後期|通年|集中)/);
+  const semester = semesterMatch ? semesterMatch[1] : rawSemester.split("／")[1]?.trim() || "前期";
 
-  // 対象学年 (最小値を使用 "2年,3年,4年" → 2)
+  // 対象学年 (最小値)
   const rawYear = getValue("対象学年");
   const yearMatches = rawYear.match(/(\d+)年/g) || [];
   const year = yearMatches.length > 0
@@ -328,11 +327,17 @@ function parseCourseDetail(html: string): CourseDetail | null {
     : rawCategory.includes("選択") ? "選択"
     : "選択";
 
-  // 対象所属 (学部名 "人文学部／School of Humanities" → "人文学部")
-  const rawFaculty = getValue("対象所属");
-  const facultyName = rawFaculty.split("／")[0].trim() || rawFaculty.split("/")[0].trim();
+  // 対象所属 (学部 + 学科)
+  // "人文学部／School of Humanities" → facultyName="人文学部", department=""
+  // "工学部　電気電子工学科" → facultyName="工学部", department="電気電子工学科"
+  const rawAffil = getValue("対象所属");
+  const affilJa = rawAffil.split("／")[0].trim();
+  // 学科パターン: "〇〇部　〇〇科" or "〇〇部 〇〇科"
+  const deptMatch = affilJa.match(/^(.+[部院])[　\s]+(.+[科系類])$/);
+  const facultyName = deptMatch ? deptMatch[1].trim() : affilJa;
+  const department = deptMatch ? deptMatch[2].trim() : "";
 
-  return { name, instructor, semester, year, credits, courseType, facultyName };
+  return { name, instructor, semester, year, credits, courseType, facultyName, department };
 }
 
 // 学部名を DB の名前に正規化
@@ -408,8 +413,11 @@ async function main() {
           continue;
         }
 
-        // syllabusCode で検索して upsert
-        const existing = await prisma.course.findFirst({ where: { syllabusCode: courseCode } });
+        // syllabusCode → 名前+学部 の順でマッチ (口コミを引き継ぐ)
+        const existing =
+          await prisma.course.findFirst({ where: { syllabusCode: courseCode } }) ??
+          await prisma.course.findFirst({ where: { name: detail.name, facultyId: faculty.id, syllabusCode: null } });
+
         if (existing) {
           await prisma.course.update({
             where: { id: existing.id },
@@ -420,6 +428,10 @@ async function main() {
               semester: detail.semester,
               credits: detail.credits,
               courseType: detail.courseType,
+              syllabusCode: courseCode,
+              syllabusJscd: jscd,
+              syllabusYear: parseInt(YEAR),
+              department: detail.department || null,
             },
           });
         } else {
@@ -433,6 +445,9 @@ async function main() {
               credits: detail.credits,
               courseType: detail.courseType,
               syllabusCode: courseCode,
+              syllabusJscd: jscd,
+              syllabusYear: parseInt(YEAR),
+              department: detail.department || null,
             },
           });
         }

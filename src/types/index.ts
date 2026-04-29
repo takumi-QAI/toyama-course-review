@@ -13,6 +13,9 @@ export interface Course {
   credits: number;
   courseType: string;
   syllabusCode?: string | null;
+  syllabusJscd?: string | null;
+  syllabusYear?: number | null;
+  department?: string | null;
   summary?: string | null;
   summaryAt?: Date | null;
   _count?: { reviews: number };
