@@ -7,7 +7,8 @@ import Spinner from "./ui/Spinner";
 import type { Session } from "next-auth";
 import type { Review } from "@/types";
 
-const EASY_LABELS = ["", "かなり難しい", "難しい", "普通", "楽", "超楽単"];
+const EASY_LABELS     = ["", "かなり難しい", "難しい", "普通", "楽", "超楽単"];
+const INTEREST_LABELS = ["", "つまらない", "あまり面白くない", "普通", "面白い", "とても面白い"];
 
 interface ReviewFormProps {
   courseId: string;
@@ -19,6 +20,7 @@ interface ReviewFormProps {
 export default function ReviewForm({ courseId, session, reviews, onSuccess }: ReviewFormProps) {
   const [content, setContent] = useState("");
   const [easyScore, setEasyScore] = useState(0);
+  const [interestScore, setInterestScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -27,8 +29,8 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim() || !easyScore) {
-      setError("口コミ内容と楽単度を入力してください");
+    if (!content.trim() || !easyScore || !interestScore) {
+      setError("楽単度・面白さ・口コミ内容を全て入力してください");
       return;
     }
     setSubmitting(true);
@@ -37,7 +39,7 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
     const res = await fetch(`/api/courses/${courseId}/reviews`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, easyScore }),
+      body: JSON.stringify({ content, easyScore, interestScore }),
     });
     const data = await res.json();
 
@@ -52,6 +54,7 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
     onSuccess(data, newAvg);
     setContent("");
     setEasyScore(0);
+    setInterestScore(0);
     setSuccess(true);
     setSubmitting(false);
     setTimeout(() => setSuccess(false), 3000);
@@ -61,10 +64,7 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
     return (
       <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 text-center">
         <p className="text-slate-600 mb-3 text-sm">口コミを投稿するにはログインが必要です</p>
-        <Link
-          href="/auth/signin"
-          className="inline-block text-sm bg-blue-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors"
-        >
+        <Link href="/auth/signin" className="inline-block text-sm bg-blue-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-blue-700 transition-colors">
           ログインする
         </Link>
       </div>
@@ -80,7 +80,8 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* 楽単度 */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-2">
           楽単度 <span className="text-rose-500">*</span>
@@ -95,6 +96,22 @@ export default function ReviewForm({ courseId, session, reviews, onSuccess }: Re
         </div>
       </div>
 
+      {/* 授業の面白さ */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
+          授業の面白さ <span className="text-rose-500">*</span>
+        </label>
+        <div className="flex items-center gap-3">
+          <StarRating value={interestScore} onChange={setInterestScore} size="lg" />
+          {interestScore > 0 && (
+            <span className="text-sm font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-lg">
+              {INTEREST_LABELS[interestScore]}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 口コミ内容 */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-2">
           口コミ内容 <span className="text-rose-500">*</span>

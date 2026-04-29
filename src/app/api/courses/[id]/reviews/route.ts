@@ -36,12 +36,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
 
-  const { content, easyScore } = await req.json();
-  if (!content?.trim() || !easyScore) {
-    return NextResponse.json({ error: "口コミ内容と楽単度を入力してください" }, { status: 400 });
+  const { content, easyScore, interestScore } = await req.json();
+  if (!content?.trim() || !easyScore || !interestScore) {
+    return NextResponse.json({ error: "全ての評価項目を入力してください" }, { status: 400 });
   }
-  if (easyScore < 1 || easyScore > 5) {
-    return NextResponse.json({ error: "楽単度は1〜5で入力してください" }, { status: 400 });
+  if (easyScore < 1 || easyScore > 5 || interestScore < 1 || interestScore > 5) {
+    return NextResponse.json({ error: "評価は1〜5で入力してください" }, { status: 400 });
   }
 
   const existing = await prisma.review.findFirst({
@@ -52,7 +52,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const review = await prisma.review.create({
-    data: { content: content.trim(), easyScore: parseInt(String(easyScore)), userId: session.user.id, courseId: params.id },
+    data: {
+      content: content.trim(),
+      easyScore: parseInt(String(easyScore)),
+      interestScore: parseInt(String(interestScore)),
+      userId: session.user.id,
+      courseId: params.id,
+    },
     include: { user: { select: { id: true, name: true } }, _count: { select: { likes: true } } },
   });
 

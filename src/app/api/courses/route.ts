@@ -110,17 +110,18 @@ export async function GET(req: Request) {
     prisma.course.count({ where }),
     prisma.review.groupBy({
       by: ["courseId"],
-      _avg: { easyScore: true },
+      _avg: { easyScore: true, interestScore: true },
     }),
   ]);
 
   const avgMap = Object.fromEntries(
-    reviewAggregates.map((r) => [r.courseId, r._avg.easyScore])
+    reviewAggregates.map((r) => [r.courseId, r._avg])
   );
 
   const coursesWithAvg = courses.map((course) => ({
     ...course,
-    avgEasyScore: avgMap[course.id] ?? null,
+    avgEasyScore: avgMap[course.id]?.easyScore ?? null,
+    avgInterestScore: avgMap[course.id]?.interestScore ?? null,
   }));
 
   return NextResponse.json({

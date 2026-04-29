@@ -46,7 +46,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       include: { user: { select: { id: true, name: true } }, _count: { select: { likes: true } } },
       orderBy: [{ likes: { _count: "desc" } }, { createdAt: "desc" }],
     }),
-    prisma.review.aggregate({ where: { courseId: params.id }, _avg: { easyScore: true } }),
+    prisma.review.aggregate({ where: { courseId: params.id }, _avg: { easyScore: true, interestScore: true } }),
   ]);
 
   if (!courseRaw) notFound();
@@ -60,7 +60,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     likedSet = new Set(likes.map((l) => l.reviewId));
   }
 
-  const course = { ...courseRaw, avgEasyScore: agg._avg.easyScore };
+  const course = { ...courseRaw, avgEasyScore: agg._avg.easyScore, avgInterestScore: agg._avg.interestScore };
   const reviews = reviewsRaw.map((r) => ({
     ...r,
     likeCount: r._count.likes,

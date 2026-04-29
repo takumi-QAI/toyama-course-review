@@ -37,15 +37,23 @@ export default function StarRating({
   );
 }
 
-export function StarDisplay({ score, count }: { score: number | null; count: number }) {
-  if (!score || count === 0) {
+export function StarDisplay({
+  score,
+  count,
+  hideCount = false,
+}: {
+  score: number | null;
+  count: number;
+  hideCount?: boolean;
+}) {
+  if (!score || (count === 0 && !hideCount)) {
     return <span className="text-slate-400 text-sm">口コミなし</span>;
   }
   return (
     <div className="flex items-center gap-1.5">
       <StarRating value={Math.round(score)} readonly size="sm" />
       <span className="text-sm font-bold text-slate-800">{score.toFixed(1)}</span>
-      <span className="text-xs text-slate-400">({count}件)</span>
+      {!hideCount && <span className="text-xs text-slate-400">({count}件)</span>}
     </div>
   );
 }

@@ -13,8 +13,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const agg = await prisma.review.aggregate({
     where: { courseId: course.id },
-    _avg: { easyScore: true },
+    _avg: { easyScore: true, interestScore: true },
   });
 
-  return NextResponse.json({ ...course, avgEasyScore: agg._avg.easyScore });
+  return NextResponse.json({
+    ...course,
+    avgEasyScore: agg._avg.easyScore,
+    avgInterestScore: agg._avg.interestScore,
+  });
 }

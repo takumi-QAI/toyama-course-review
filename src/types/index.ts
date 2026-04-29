@@ -20,12 +20,14 @@ export interface Course {
   summaryAt?: Date | null;
   _count?: { reviews: number };
   avgEasyScore?: number | null;
+  avgInterestScore?: number | null;
 }
 
 export interface Review {
   id: string;
   content: string;
   easyScore: number;
+  interestScore: number;
   user: { id: string; name: string };
   courseId: string;
   createdAt: Date;

@@ -51,15 +51,16 @@ model Course {
 }
 
 model Review {
-  id        String       @id @default(cuid())
-  content   String
-  easyScore Int
-  user      User         @relation(fields: [userId], references: [id])
-  userId    String
-  course    Course       @relation(fields: [courseId], references: [id])
-  courseId  String
-  likes     ReviewLike[]
-  createdAt DateTime     @default(now())
+  id            String       @id @default(cuid())
+  content       String
+  easyScore     Int
+  interestScore Int          @default(3)
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String
+  course        Course       @relation(fields: [courseId], references: [id])
+  courseId      String
+  likes         ReviewLike[]
+  createdAt     DateTime     @default(now())
 
   @@index([courseId])
 }

@@ -37,9 +37,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen">{children}</main>
           <VercelAnalytics />
           <footer className="bg-slate-900 text-slate-400 mt-20">
-            <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-2 text-sm">
-              <p className="font-semibold text-slate-300">富大口コミ</p>
-              <p>© 2026 学生による非公式サービスです</p>
+            <div className="max-w-6xl mx-auto px-4 py-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+                <p className="font-semibold text-slate-300">富大口コミ</p>
+                <nav className="flex flex-wrap justify-center gap-4 text-xs">
+                  <a href="/about" className="hover:text-slate-200 transition-colors">このサイトについて</a>
+                  <a href="/privacy" className="hover:text-slate-200 transition-colors">プライバシーポリシー</a>
+                  <a href="/contact" className="hover:text-slate-200 transition-colors">お問い合わせ</a>
+                </nav>
+              </div>
+              <p className="text-center text-xs text-slate-600 mt-4">© 2026 学生による非公式サービスです。富山大学とは無関係です。</p>
             </div>
           </footer>
         </SessionProvider>

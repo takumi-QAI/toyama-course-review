@@ -51,6 +51,9 @@ export default function CourseDetailClient({ course, initialReviews, session }: 
   const avgEasyScore = reviews.length > 0
     ? reviews.reduce((s, r) => s + r.easyScore, 0) / reviews.length
     : course.avgEasyScore;
+  const avgInterestScore = reviews.length > 0
+    ? reviews.reduce((s, r) => s + (r.interestScore ?? 0), 0) / reviews.length
+    : course.avgInterestScore;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -86,7 +89,16 @@ export default function CourseDetailClient({ course, initialReviews, session }: 
         <p className="text-slate-500 mb-5">{course.instructor}</p>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <StarDisplay score={avgEasyScore ?? null} count={reviews.length} />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-12">楽単</span>
+              <StarDisplay score={avgEasyScore ?? null} count={reviews.length} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 w-12">面白さ</span>
+              <StarDisplay score={avgInterestScore ?? null} count={reviews.length} />
+            </div>
+          </div>
           <div className="flex gap-2 flex-wrap">
             {course.syllabusCode && course.syllabusJscd && (
               <a

@@ -18,11 +18,20 @@ export default function CourseCard({ course }: { course: Course }) {
         </h3>
         <p className="text-sm text-slate-500 mb-4 truncate">{course.instructor}</p>
 
-        <div className="flex items-center justify-between mt-auto">
-          <StarDisplay score={course.avgEasyScore ?? null} count={course._count?.reviews ?? 0} />
-          <span className="text-xs text-slate-400">
-            {course.year}年 · {course.credits}単位
-          </span>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 w-10 shrink-0">楽単</span>
+              <StarDisplay score={course.avgEasyScore ?? null} count={course._count?.reviews ?? 0} />
+            </div>
+          </div>
+          {(course.avgInterestScore ?? null) !== null && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400 w-10 shrink-0">面白さ</span>
+              <StarDisplay score={course.avgInterestScore ?? null} count={0} hideCount />
+            </div>
+          )}
+          <p className="text-xs text-slate-400 text-right">{course.year}年 · {course.credits}単位</p>
         </div>
       </div>
     </Link>
