@@ -1,95 +1,278 @@
-# 富大口コミ - 富山大学授業口コミサイト
+# 富大口コミ
 
-富山大学の授業口コミ・楽単情報・教科書お譲りを共有するWebアプリです。
+富山大学の授業口コミ・楽単情報・教科書お譲りプラットフォーム。
+
+**本番サイト**: https://toyama-course-review.vercel.app/
+
+---
 
 ## 機能
 
-- 📖 全授業一覧（学部・学年・学期でフィルター・検索）
-- ⭐ 楽単度（★1〜★5）付き口コミ投稿
-- 🤖 Groq (Llama 3.3) によるAI口コミ要約（無料）
-- 📚 教科書お譲りマーケットプレイス
-- 🔐 メール・パスワード認証
+- 全授業一覧（学部・学科・学期・学年でフィルター・検索）
+- 楽単度（★1〜★5）付き口コミ投稿
+- Groq (Llama 3.3-70B) による AI 口コミ要約
+- 教科書お譲りマーケットプレイス
+- シラバス原本へのリンク
+- お問い合わせフォーム
+- 管理者ダッシュボード（訪問者統計・問い合わせ管理・情報提供承認）
 
-## セットアップ
+---
 
-### 1. Node.js をインストール
+## 技術スタック
 
-Node.js をまだインストールしていない場合:
+| 項目 | 内容 |
+|------|------|
+| フレームワーク | Next.js 14 (App Router) |
+| 言語 | TypeScript |
+| 認証 | NextAuth v4 (JWT + bcrypt) |
+| DB | PostgreSQL (Neon) |
+| ORM | Prisma |
+| AI 要約 | Groq API (Llama 3.3-70B) |
+| ホスティング | Vercel |
+| アナリティクス | Vercel Analytics + 独自 PageView |
 
-```
-# 方法1: 公式インストーラー（推奨）
-https://nodejs.org/ja/ から LTS版をダウンロード
+---
 
-# 方法2: scoop を使う場合
-scoop install nodejs-lts
-```
+## ローカル開発のセットアップ
 
-### 2. 依存パッケージのインストール
+### 1. 依存パッケージのインストール
 
 ```bash
 npm install
 ```
 
-### 3. データベースのセットアップ
+### 2. 環境変数の設定
 
-```bash
-npx prisma migrate dev --name init
-npx prisma db seed
-```
+`.env.example` をコピーして `.env` を作成:
 
-### 4. 環境変数の設定
+```env
+# Neon の接続文字列（https://console.neon.tech で取得）
+DATABASE_URL="postgresql://..."
 
-`.env` ファイルを編集してください:
-
-```
-DATABASE_URL="file:./dev.db"
+# NextAuth
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="任意のランダムな文字列"
+NEXTAUTH_SECRET="ランダムな文字列（下記コマンドで生成）"
 
-# Groq APIキー（無料）: https://console.groq.com でサインアップして取得
+# 管理者メールアドレス（自分のアカウントのメール）
+ADMIN_EMAIL="your@email.com"
+NEXT_PUBLIC_ADMIN_EMAIL="your@email.com"
+
+# Groq API Key（https://console.groq.com で無料取得）
 GROQ_API_KEY="gsk_..."
+
+# Google AdSense（審査通過後に設定）
+# NEXT_PUBLIC_ADSENSE_ID="ca-pub-..."
 ```
 
-**NEXTAUTH_SECRET の生成方法:**
+NEXTAUTH_SECRET の生成:
 ```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-### 5. 開発サーバーの起動
+### 3. Prisma クライアントの生成
+
+```bash
+npx prisma generate
+```
+
+### 4. 開発サーバーの起動
 
 ```bash
 npm run dev
 ```
 
-ブラウザで http://localhost:3000 を開いてください。
+---
 
-## デモアカウント
+## データベース管理
 
-- メール: demo@u-toyama.ac.jp
-- パスワード: password123
-
-## Groq API（無料LLM）の設定
-
-1. https://console.groq.com にアクセスしてアカウントを作成
-2. 「API Keys」から新しいAPIキーを生成
-3. `.env` の `GROQ_API_KEY` にセット
-4. 口コミが3件以上になると「AI要約を生成」ボタンが利用可能になります
-
-## 技術スタック
-
-- **フレームワーク**: Next.js 14 (App Router)
-- **言語**: TypeScript
-- **データベース**: SQLite + Prisma
-- **認証**: NextAuth.js v4
-- **スタイリング**: Tailwind CSS
-- **LLM**: Groq API (Llama 3.3-70B) - 無料枠あり
-
-## コマンド一覧
+### DB の中身をブラウザで確認する（Prisma Studio）
 
 ```bash
-npm run dev          # 開発サーバー起動
-npm run build        # 本番ビルド
-npm run db:migrate   # DBマイグレーション
-npm run db:seed      # シードデータ投入
-npm run db:studio    # Prisma Studio（DB GUI）
+npm run db:studio
 ```
+
+`http://localhost:5555` が開き、全テーブルの中身を GUI で確認・編集できます。授業・口コミ・ユーザーの確認や削除が手軽にできます。
+
+### Neon コンソールで確認する
+
+https://console.neon.tech にログインしてプロジェクトを選択。
+「SQL Editor」タブから直接 SQL を実行できます。
+
+```sql
+-- ユーザー数
+SELECT COUNT(*) FROM "User";
+
+-- 口コミ数
+SELECT COUNT(*) FROM "Review";
+
+-- 本日の訪問者数
+SELECT COUNT(*) FROM "PageView"
+WHERE "createdAt" >= CURRENT_DATE;
+
+-- 学部ごとの授業数
+SELECT f.name, COUNT(c.id) as cnt
+FROM "Faculty" f
+LEFT JOIN "Course" c ON c."facultyId" = f.id
+GROUP BY f.name ORDER BY cnt DESC;
+
+-- 楽単度ランキング（口コミ3件以上の授業）
+SELECT c.name, c.instructor, ROUND(AVG(r."easyScore")::numeric, 2) as avg
+FROM "Course" c
+JOIN "Review" r ON r."courseId" = c.id
+GROUP BY c.id, c.name, c.instructor
+HAVING COUNT(r.id) >= 3
+ORDER BY avg DESC LIMIT 20;
+```
+
+### スキーマ変更の手順
+
+1. `prisma/schema.prisma` を編集
+2. `prisma/migrations/YYYYMMDDXXXXXX_変更名/migration.sql` を作成（SQL を手書き）
+3. Neon に適用:
+   ```bash
+   npx prisma migrate deploy
+   ```
+4. Prisma クライアントを再生成:
+   ```bash
+   npx prisma generate
+   ```
+
+---
+
+## シラバスクローリング
+
+### 実行方法
+
+```bash
+npm run crawl
+```
+
+富山大学のシラバスシステム（CampusSquare）から全授業データを取得して DB に保存します。  
+初回で約 **3,085件**、所要時間は約 **15〜20分**。
+
+### 取得できる情報
+
+| フィールド | 内容 |
+|-----------|------|
+| 授業名 | 日本語名 |
+| 担当教員 | 主担当者名 |
+| 単位数 | 取得単位数 |
+| 対象学年 | 最若学年 |
+| 学期 | 前期/後期/第Nターム/通年 etc. |
+| 授業区分 | 必修/選択必修/選択 |
+| 学科 | 学科情報がある場合 |
+| syllabusCode | 時間割コード（URL生成・年次引き継ぎに使用） |
+
+---
+
+## 年次更新の手順（毎年4月）
+
+新年度のシラバスが公開されたら以下を実行します（例: 2027年度への更新）。
+
+### Step 1: 年度を変更
+
+`scripts/crawl-syllabus.ts` の3行目:
+
+```typescript
+const YEAR = "2027";  // ← 新年度に変更
+```
+
+### Step 2: クローラーを実行
+
+```bash
+npm run crawl
+```
+
+**口コミ・教科書データは保持されます。**
+
+| 状況 | 動作 |
+|------|------|
+| 同じ `syllabusCode` の授業 | 授業情報（教員名・単位数等）を上書き更新、口コミはそのまま |
+| 新設授業（新しいコード） | 新規追加 |
+| 廃止授業（消えたコード） | DB に残る（口コミが消えない） |
+
+### Step 3: 廃止授業の整理（任意）
+
+`syllabusYear` が古い授業を確認して削除:
+
+```bash
+npm run db:studio
+```
+`Course` テーブルで `syllabusYear` でソートして確認。
+
+---
+
+## 管理者ダッシュボード
+
+`/admin` にアクセス（管理者アカウントでログイン時のみ「管理」リンクが表示されます）。
+
+| 機能 | 内容 |
+|------|------|
+| 統計カード | 総ユーザー数・口コミ数・授業数・今日の訪問者数 |
+| ページビューグラフ | 過去7日間の日別訪問数 |
+| お問い合わせ受信箱 | ユーザーからの問い合わせ一覧・既読管理 |
+| 情報提供の承認 | ユーザーが提案した授業区分の承認/却下 |
+
+### 管理者の設定
+
+Vercel の環境変数に以下を設定:
+
+```
+ADMIN_EMAIL=your@email.com
+NEXT_PUBLIC_ADMIN_EMAIL=your@email.com
+```
+
+---
+
+## Google AdSense の設定
+
+1. https://adsense.google.com でサイトを申請
+2. 審査通過後、Publisher ID（`ca-pub-XXXXXXXXXX`）を取得
+3. Vercel の環境変数に追加:
+   ```
+   NEXT_PUBLIC_ADSENSE_ID=ca-pub-XXXXXXXXXX
+   ```
+4. 再デプロイで広告が自動表示されます（未設定時はプレースホルダーを表示）
+
+---
+
+## Vercel へのデプロイ
+
+GitHub の `main` ブランチへの push で自動デプロイされます。
+
+### 必要な環境変数
+
+| 変数名 | 説明 |
+|--------|------|
+| `DATABASE_URL` | Neon の接続文字列 |
+| `NEXTAUTH_SECRET` | JWT 署名用の秘密鍵 |
+| `NEXTAUTH_URL` | 本番サイトの URL（例: `https://toyama-course-review.vercel.app`） |
+| `ADMIN_EMAIL` | 管理者のメールアドレス |
+| `NEXT_PUBLIC_ADMIN_EMAIL` | 同上（クライアント側用） |
+| `GROQ_API_KEY` | Groq の API キー |
+| `NEXT_PUBLIC_ADSENSE_ID` | AdSense Publisher ID（任意） |
+
+### 手動で再デプロイ
+
+Vercel ダッシュボード → Deployments → 最新の行の「...」→ Redeploy
+
+または:
+
+```bash
+git commit --allow-empty -m "redeploy" && git push
+```
+
+---
+
+## npm スクリプト一覧
+
+| コマンド | 内容 |
+|---------|------|
+| `npm run dev` | 開発サーバー起動 |
+| `npm run build` | 本番ビルド |
+| `npm run crawl` | シラバスクローリング |
+| `npm run db:seed` | サンプルデータ投入 |
+| `npm run db:studio` | Prisma Studio（DB GUI）起動 |
+| `npm run db:migrate` | マイグレーション作成（ローカル） |
+| `npx prisma migrate deploy` | マイグレーションを Neon に適用 |
+| `npx prisma generate` | Prisma クライアント再生成 |

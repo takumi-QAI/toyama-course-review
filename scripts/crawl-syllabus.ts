@@ -303,11 +303,19 @@ function parseCourseDetail(html: string): CourseDetail | null {
   const instructor = rawInstructor.split(/[（(]/)[0].trim();
   if (!instructor) return null;
 
-  // 学期 (生の値をそのまま保持: 前期/後期/通年/前期集中/後期集中 etc.)
+  // 学期: "2026年度／Academic Year 前期／Spring" → "前期"
+  //       "2026年度 第1ターム／1st Term"        → "第1ターム"
   const rawSemester = getValue("開講学期");
-  // "2026年度／Academic Year 前期／Spring" → "前期"
-  const semesterMatch = rawSemester.match(/(前期集中|後期集中|前期・後期|前期|後期|通年|集中)/);
-  const semester = semesterMatch ? semesterMatch[1] : rawSemester.split("／")[1]?.trim() || "前期";
+  const semesterMatch = rawSemester.match(
+    /(前期集中|後期集中|前期・後期|第\d+ターム|前期|後期|通年|集中)/
+  );
+  const semester = semesterMatch
+    ? semesterMatch[1]
+    : rawSemester
+        .replace(/Academic Year\s*/g, "")
+        .replace(/\d{4}年度[\/／\s]*/g, "")
+        .split(/[\/／]/)[0]
+        .trim() || "前期";
 
   // 対象学年 (最小値)
   const rawYear = getValue("対象学年");
