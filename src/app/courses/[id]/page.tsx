@@ -4,9 +4,14 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import StarRating, { StarDisplay } from "@/components/StarRating";
+import { StarDisplay } from "@/components/StarRating";
 import ReviewCard from "@/components/ReviewCard";
+import ReviewForm from "@/components/ReviewForm";
+import AISummaryCard from "@/components/AISummaryCard";
 import AdUnit from "@/components/AdUnit";
+import Badge, { semesterVariant, courseTypeVariant } from "@/components/ui/Badge";
+import { PageLoading } from "@/components/ui/Spinner";
+import EmptyState from "@/components/ui/EmptyState";
 import type { Course, Review } from "@/types";
 
 const COURSE_TYPES = ["必修", "選択必修", "選択"] as const;
@@ -17,16 +22,7 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const [content, setContent] = useState("");
-  const [easyScore, setEasyScore] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const [contributeOpen, setContributeOpen] = useState(false);
   const [contributeValue, setContributeValue] = useState("");
@@ -39,64 +35,12 @@ export default function CourseDetailPage() {
         fetch(`/api/courses/${id}`),
         fetch(`/api/courses/${id}/reviews`),
       ]);
-      const courseData = await courseRes.json();
-      const reviewsData = await reviewsRes.json();
-      setCourse(courseData);
-      setReviews(reviewsData);
+      setCourse(await courseRes.json());
+      setReviews(await reviewsRes.json());
       setLoading(false);
     }
     load();
   }, [id]);
-
-  async function loadSummary() {
-    setSummaryLoading(true);
-    setSummaryError(null);
-    const res = await fetch(`/api/courses/${id}/summary`);
-    const data = await res.json();
-    if (data.error) {
-      setSummaryError(data.error);
-    } else {
-      setSummary(data.summary);
-    }
-    setSummaryLoading(false);
-  }
-
-  async function handleSubmitReview(e: React.FormEvent) {
-    e.preventDefault();
-    if (!content.trim() || !easyScore) {
-      setSubmitError("口コミ内容と楽単度を入力してください");
-      return;
-    }
-    setSubmitting(true);
-    setSubmitError(null);
-
-    const res = await fetch(`/api/courses/${id}/reviews`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, easyScore }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      setSubmitError(data.error);
-      setSubmitting(false);
-      return;
-    }
-
-    setReviews((prev) => [data, ...prev]);
-    setContent("");
-    setEasyScore(0);
-    setSubmitSuccess(true);
-    setSummary(null);
-
-    const agg = [...reviews, data].reduce((acc, r) => acc + r.easyScore, 0) / (reviews.length + 1);
-    setCourse((prev) => prev ? { ...prev, avgEasyScore: agg, _count: { reviews: (prev._count?.reviews ?? 0) + 1 } } : prev);
-
-    setSubmitting(false);
-    setTimeout(() => setSubmitSuccess(false), 3000);
-  }
-
-  const alreadyReviewed = session && reviews.some((r) => r.user.id === session.user?.id);
 
   async function handleContribute(e: React.FormEvent) {
     e.preventDefault();
@@ -109,28 +53,24 @@ export default function CourseDetailPage() {
       body: JSON.stringify({ field: "courseType", value: contributeValue }),
     });
     const data = await res.json();
-    if (res.ok) {
-      setContributeMsg("提案を送信しました。管理者が確認後に反映されます。");
-      setContributeOpen(false);
-    } else {
-      setContributeMsg(data.error);
-    }
+    setContributeMsg(res.ok ? "提案を送信しました。管理者確認後に反映されます。" : data.error);
+    if (res.ok) setContributeOpen(false);
     setContributeSubmitting(false);
   }
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center text-gray-500">
-        <div className="text-3xl mb-3">⏳</div>
-        <p>読み込み中...</p>
-      </div>
+  function handleReviewSuccess(review: Review, newAvg: number) {
+    setReviews((prev) => [review, ...prev]);
+    setCourse((prev) =>
+      prev ? { ...prev, avgEasyScore: newAvg, _count: { reviews: (prev._count?.reviews ?? 0) + 1 } } : prev
     );
   }
 
+  if (loading) return <PageLoading />;
+
   if (!course) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <p className="text-red-500">授業が見つかりませんでした</p>
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <EmptyState icon="❌" title="授業が見つかりませんでした" />
       </div>
     );
   }
@@ -138,33 +78,25 @@ export default function CourseDetailPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-4">
-        <Link href="/courses" className="hover:text-blue-600">授業一覧</Link>
-        <span className="mx-2">/</span>
-        <span className="text-gray-700">{course.name}</span>
+      <nav className="flex items-center gap-1.5 text-sm text-slate-400 mb-6">
+        <Link href="/courses" className="hover:text-blue-600 transition-colors">授業一覧</Link>
+        <span>/</span>
+        <span className="text-slate-700 truncate">{course.name}</span>
       </nav>
 
       {/* Course Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <div className="flex flex-wrap gap-2 mb-3">
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-            {course.faculty.name}
-          </span>
-          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
-            {course.semester}
-          </span>
-          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
-            {course.year}年生
-          </span>
-          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
-            {course.credits}単位
-          </span>
-          <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-            {course.courseType}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-5 shadow-sm">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Badge variant="blue">{course.faculty.name}</Badge>
+          <Badge variant={semesterVariant(course.semester)}>{course.semester}</Badge>
+          <Badge variant="gray">{course.year}年生</Badge>
+          <Badge variant="gray">{course.credits}単位</Badge>
+          <span className="inline-flex items-center gap-1">
+            <Badge variant={courseTypeVariant(course.courseType)}>{course.courseType}</Badge>
             {session && (
               <button
                 onClick={() => { setContributeOpen(!contributeOpen); setContributeMsg(null); }}
-                className="text-gray-400 hover:text-blue-500 transition-colors ml-0.5"
+                className="text-slate-400 hover:text-blue-500 transition-colors text-xs"
                 title="区分を訂正する"
               >
                 ✏️
@@ -173,44 +105,41 @@ export default function CourseDetailPage() {
           </span>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{course.name}</h1>
-        <p className="text-gray-600 mb-4">{course.instructor}</p>
+        <h1 className="text-2xl font-bold text-slate-900 mb-1">{course.name}</h1>
+        <p className="text-slate-500 mb-5">{course.instructor}</p>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <StarDisplay
-            score={course.avgEasyScore ?? null}
-            count={course._count?.reviews ?? 0}
-          />
+          <StarDisplay score={course.avgEasyScore ?? null} count={course._count?.reviews ?? 0} />
           <div className="flex gap-2 flex-wrap">
             {course.syllabusCode && course.syllabusJscd && (
               <a
                 href={`https://www.new-syllabus.adm.u-toyama.ac.jp/syllabus/${course.syllabusYear ?? 2026}/${course.syllabusJscd}/${course.syllabusJscd}_${course.syllabusCode}.html`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="text-sm bg-slate-700 text-white px-4 py-2 rounded-xl hover:bg-slate-600 transition-colors font-medium"
               >
                 📄 シラバスを見る
               </a>
             )}
             <Link
               href={`/courses/${id}/textbooks`}
-              className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              className="text-sm bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors font-medium"
             >
-              📚 教科書お譲りを見る
+              📚 教科書お譲り
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Contribution form */}
+      {/* Contribution Form */}
       {contributeOpen && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-          <p className="text-sm font-medium text-blue-800 mb-2">授業区分を訂正する</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5">
+          <p className="text-sm font-semibold text-blue-800 mb-2">授業区分を訂正する</p>
           <form onSubmit={handleContribute} className="flex items-center gap-2 flex-wrap">
             <select
               value={contributeValue}
               onChange={(e) => setContributeValue(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-blue-300 text-sm bg-white focus:outline-none focus:border-blue-500"
+              className="px-3 py-1.5 rounded-xl border border-blue-200 text-sm bg-white focus:outline-none focus:border-blue-400"
             >
               <option value="">選択してください</option>
               {COURSE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -218,146 +147,53 @@ export default function CourseDetailPage() {
             <button
               type="submit"
               disabled={!contributeValue || contributeSubmitting}
-              className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
             >
               提案する
             </button>
           </form>
-          {contributeMsg && <p className="text-xs text-blue-700 mt-2">{contributeMsg}</p>}
+          {contributeMsg && (
+            <p className={`text-xs mt-2 ${contributeMsg.includes("送信") ? "text-blue-700" : "text-rose-600"}`}>
+              {contributeMsg}
+            </p>
+          )}
         </div>
-      )}
-      {contributeMsg && !contributeOpen && (
-        <p className="text-xs text-green-600 mb-4">{contributeMsg}</p>
       )}
 
       {/* Ad */}
-      <AdUnit slot="1234567890" format="horizontal" className="mb-6 min-h-[90px]" />
+      <AdUnit slot="1234567890" format="horizontal" className="mb-5 min-h-[90px]" />
 
       {/* AI Summary */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-5 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-800 flex items-center gap-2">
-            <span>🤖</span> AI口コミ要約
-          </h2>
-          {!summary && !summaryLoading && (
-            <button
-              onClick={loadSummary}
-              disabled={(course._count?.reviews ?? 0) < 3}
-              className="text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              要約を生成
-            </button>
-          )}
-        </div>
-
-        {summaryLoading && (
-          <div className="flex items-center gap-2 text-gray-600 text-sm">
-            <div className="animate-spin w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full"></div>
-            <span>AIが口コミを分析中...</span>
-          </div>
-        )}
-
-        {summaryError && (
-          <p className="text-sm text-gray-600">{summaryError}</p>
-        )}
-
-        {summary && (
-          <div>
-            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{summary}</p>
-            <p className="text-xs text-gray-400 mt-2">
-              Powered by Groq (Llama 3.3-70B) ・ AIによる自動生成です
-            </p>
-          </div>
-        )}
-
-        {!summary && !summaryLoading && !summaryError && (
-          <p className="text-sm text-gray-500">
-            {(course._count?.reviews ?? 0) >= 3
-              ? "「要約を生成」ボタンを押すとAIが口コミを分析します"
-              : `口コミが${3 - (course._count?.reviews ?? 0)}件以上になるとAI要約が利用できます`}
-          </p>
-        )}
+      <div className="mb-5">
+        <AISummaryCard courseId={id} reviewCount={reviews.length} />
       </div>
 
-      {/* Review Form */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h2 className="font-bold text-gray-900 mb-4">口コミを投稿する</h2>
-
-        {!session ? (
-          <div className="text-center py-4">
-            <p className="text-gray-600 mb-3 text-sm">口コミを投稿するにはログインが必要です</p>
-            <Link
-              href="/auth/signin"
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              ログインする
-            </Link>
-          </div>
-        ) : alreadyReviewed ? (
-          <div className="text-center py-4 bg-gray-50 rounded-lg">
-            <p className="text-gray-600 text-sm">この授業にはすでに口コミを投稿しています</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmitReview}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                楽単度 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-3">
-                <StarRating value={easyScore} onChange={setEasyScore} size="lg" />
-                {easyScore > 0 && (
-                  <span className="text-sm text-gray-600">
-                    {["", "かなり難しい", "難しい", "普通", "楽", "超楽単"][easyScore]}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                口コミ内容 <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="授業の雰囲気、評価方法、受講のポイントなどを書いてください"
-                rows={4}
-                maxLength={1000}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm resize-none"
-              />
-              <p className="text-xs text-gray-400 mt-1 text-right">{content.length}/1000</p>
-            </div>
-
-            {submitError && (
-              <p className="text-sm text-red-500 mb-3">{submitError}</p>
-            )}
-            {submitSuccess && (
-              <p className="text-sm text-green-600 mb-3">口コミを投稿しました！</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
-            >
-              {submitting ? "投稿中..." : "投稿する"}
-            </button>
-          </form>
-        )}
+      {/* Review Section */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-5 shadow-sm">
+        <h2 className="font-bold text-slate-900 mb-5">口コミを投稿する</h2>
+        <ReviewForm
+          courseId={id}
+          session={session}
+          reviews={reviews}
+          onSuccess={handleReviewSuccess}
+        />
       </div>
 
-      {/* Reviews */}
+      {/* Reviews List */}
       <div>
-        <h2 className="font-bold text-gray-900 mb-4">
-          口コミ一覧 <span className="text-gray-500 font-normal text-sm">({reviews.length}件)</span>
+        <h2 className="font-bold text-slate-900 mb-4">
+          口コミ一覧{" "}
+          <span className="text-slate-400 font-normal text-sm">({reviews.length}件)</span>
         </h2>
 
         {reviews.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-            <p className="text-gray-500 text-sm">まだ口コミがありません。最初の口コミを投稿しましょう！</p>
-          </div>
+          <EmptyState
+            icon="💬"
+            title="まだ口コミがありません"
+            description="最初の口コミを投稿しましょう！"
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {reviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}

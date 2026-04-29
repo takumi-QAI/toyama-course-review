@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import Badge, { type Variant } from "./ui/Badge";
 import type { Textbook } from "@/types";
 
-const conditionLabels: Record<string, { label: string; color: string }> = {
-  美品: { label: "美品", color: "bg-green-100 text-green-700" },
-  良好: { label: "良好", color: "bg-blue-100 text-blue-700" },
-  普通: { label: "普通", color: "bg-yellow-100 text-yellow-700" },
-  "難あり": { label: "難あり", color: "bg-red-100 text-red-700" },
+const CONDITIONS: Record<string, { label: string; variant: Variant }> = {
+  美品:   { label: "美品",   variant: "green" },
+  良好:   { label: "良好",   variant: "blue" },
+  普通:   { label: "普通",   variant: "orange" },
+  難あり: { label: "難あり", variant: "red" },
 };
 
 export default function TextbookCard({
@@ -23,7 +24,7 @@ export default function TextbookCard({
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const isMine = session?.user?.id === textbook.seller.id;
-  const condition = conditionLabels[textbook.condition] ?? { label: textbook.condition, color: "bg-gray-100 text-gray-700" };
+  const condition = CONDITIONS[textbook.condition] ?? { label: textbook.condition, variant: "gray" as const };
   const isSold = textbook.status === "sold";
 
   async function handleMarkSold() {
@@ -46,40 +47,37 @@ export default function TextbookCard({
   }
 
   return (
-    <div className={`bg-white rounded-xl border p-5 ${isSold ? "opacity-60 border-gray-200" : "border-gray-200 hover:shadow-sm"}`}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <h4 className="font-semibold text-gray-900">{textbook.title}</h4>
-          {textbook.author && <p className="text-sm text-gray-500">{textbook.author}</p>}
+    <div className={`bg-white rounded-2xl border p-5 transition-all ${isSold ? "opacity-50 border-slate-200" : "border-slate-200 hover:shadow-md"}`}>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-slate-900 leading-snug">{textbook.title}</h4>
+          {textbook.author && <p className="text-sm text-slate-500 mt-0.5">{textbook.author}</p>}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {isSold && (
-            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-medium">譲渡済み</span>
-          )}
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${condition.color}`}>
-            {condition.label}
-          </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {isSold && <Badge variant="gray">譲渡済み</Badge>}
+          <Badge variant={condition.variant}>{condition.label}</Badge>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-xl font-bold text-blue-700">¥{textbook.price.toLocaleString()}</span>
-        {textbook.isbn && <span className="text-xs text-gray-400">ISBN: {textbook.isbn}</span>}
+      <div className="flex items-baseline gap-3 mb-3">
+        <span className="text-2xl font-bold text-blue-700">¥{textbook.price.toLocaleString()}</span>
+        {textbook.isbn && <span className="text-xs text-slate-400">ISBN: {textbook.isbn}</span>}
       </div>
 
       {textbook.description && (
-        <p className="text-sm text-gray-600 mb-3 leading-relaxed">{textbook.description}</p>
+        <p className="text-sm text-slate-600 mb-3 leading-relaxed bg-slate-50 rounded-lg px-3 py-2">
+          {textbook.description}
+        </p>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-500">
-          出品: {textbook.seller.name} ・{" "}
-          {new Date(textbook.createdAt).toLocaleDateString("ja-JP")}
-        </div>
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <p className="text-xs text-slate-400">
+          {textbook.seller.name} · {new Date(textbook.createdAt).toLocaleDateString("ja-JP")}
+        </p>
         {!isSold && !isMine && (
           <a
             href={`mailto:${textbook.contact}`}
-            className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-xl font-medium hover:bg-blue-700 transition-colors"
           >
             連絡する
           </a>
@@ -87,18 +85,18 @@ export default function TextbookCard({
       </div>
 
       {isMine && (
-        <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
+        <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
           <button
             onClick={handleMarkSold}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-slate-600"
           >
             {isSold ? "出品中に戻す" : "譲渡済みにする"}
           </button>
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
           >
             削除
           </button>

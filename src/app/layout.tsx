@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SessionProvider from "@/components/SessionProvider";
 import Analytics from "@/components/Analytics";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+
+const inter = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
   title: "富大口コミ - 富山大学授業口コミサイト",
@@ -15,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
   return (
-    <html lang="ja">
+    <html lang="ja" className={inter.variable}>
       <head>
         {adsenseId && (
           <Script
@@ -32,9 +35,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="min-h-screen">{children}</main>
           <VercelAnalytics />
-          <footer className="bg-gray-800 text-gray-400 text-center py-6 text-sm mt-16">
-            <p>© 2026 富大口コミ - 富山大学授業口コミサイト</p>
-            <p className="mt-1 text-xs">このサイトは学生による非公式のサービスです</p>
+          <footer className="bg-slate-900 text-slate-400 mt-20">
+            <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-2 text-sm">
+              <p className="font-semibold text-slate-300">富大口コミ</p>
+              <p>© 2026 学生による非公式サービスです</p>
+            </div>
           </footer>
         </SessionProvider>
       </body>
