@@ -8,13 +8,15 @@
 
 ## 機能
 
-- 全授業一覧（学部・学科・学期・学年でフィルター・検索）
-- 楽単度（★1〜★5）付き口コミ投稿
+- 全授業一覧（学部・学科・学期・学年でフィルター・検索・ソート）
+- 楽単度（★1〜★5）付き口コミ投稿・「役に立った」いいね
 - Groq (Llama 3.3-70B) による AI 口コミ要約
-- 教科書お譲りマーケットプレイス
-- シラバス原本へのリンク
-- お問い合わせフォーム
+- 教科書お譲りマーケットプレイス（画像付き出品対応）
+- シラバス原本へのリンク・LINE/X シェアボタン
+- マイページ（自分の口コミ・出品教科書管理）
+- お問い合わせフォーム（レートリミット付き）
 - 管理者ダッシュボード（訪問者統計・問い合わせ管理・情報提供承認）
+- SEO 対応（サーバーサイドレンダリング・OGP・sitemap.xml）
 
 ---
 
@@ -282,12 +284,11 @@ GitHub の `main` ブランチへの push で自動デプロイされます。
 | `ADMIN_EMAIL` | 管理者のメールアドレス |
 | `NEXT_PUBLIC_ADMIN_EMAIL` | 同上（クライアント側用） |
 | `GROQ_API_KEY` | Groq の API キー |
+| `NEXT_PUBLIC_SITE_URL` | 本番 URL（sitemap・OGP 用） |
 | `NEXT_PUBLIC_ADSENSE_ID` | AdSense Publisher ID |
-| `NEXT_PUBLIC_AD_SLOT_1` | 授業詳細ページ上部のスロット ID |
-| `NEXT_PUBLIC_AD_SLOT_2` | 授業詳細ページ口コミ下のスロット ID |
-| `NEXT_PUBLIC_AD_SLOT_3` | 授業一覧ページのスロット ID |
-| `NEXT_PUBLIC_AD_SLOT_4` | ホームページのスロット ID |
-| `NEXT_PUBLIC_AD_SLOT_5` | 教科書ページのスロット ID |
+| `NEXT_PUBLIC_AD_SLOT_1`〜`5` | 各広告スロット ID |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob（教科書画像アップロード） |
+| `NEXT_PUBLIC_BLOB_ENABLED` | 画像アップロード ON/OFF（`"true"` で有効） |
 
 ### 手動で再デプロイ
 
