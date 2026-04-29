@@ -21,6 +21,7 @@ export default function CoursesPage() {
   const [department, setDepartment] = useState("");
   const [semester, setSemester] = useState("");
   const [year, setYear] = useState("");
+  const [sort, setSort] = useState("name_asc");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,6 +34,7 @@ export default function CoursesPage() {
     if (department) params.set("department", department);
     if (semester) params.set("semester", semester);
     if (year) params.set("year", year);
+    if (sort !== "name_asc") params.set("sort", sort);
     params.set("page", String(p));
 
     const res = await fetch(`/api/courses?${params}`);
@@ -45,7 +47,7 @@ export default function CoursesPage() {
     setTotalPages(data.totalPages);
     setPage(p);
     setLoading(false);
-  }, [query, facultyId, department, semester, year]);
+  }, [query, facultyId, department, semester, year, sort]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchCourses(1), 300);
@@ -104,9 +106,16 @@ export default function CoursesPage() {
               {[1, 2, 3, 4, 5, 6].map((y) => <option key={y} value={y}>{y}年生</option>)}
             </select>
 
-            {(query || facultyId || department || semester || year) && (
+            <select value={sort} onChange={(e) => setSort(e.target.value)} className={SELECT_CLASS}>
+              <option value="name_asc">名前順</option>
+              <option value="easyScore_desc">楽単度（高い順）</option>
+              <option value="reviews_desc">口コミ数（多い順）</option>
+              <option value="createdAt_desc">新着順</option>
+            </select>
+
+            {(query || facultyId || department || semester || year || sort !== "name_asc") && (
               <button
-                onClick={() => { setQuery(""); setFacultyId(""); setDepartment(""); setSemester(""); setYear(""); }}
+                onClick={() => { setQuery(""); setFacultyId(""); setDepartment(""); setSemester(""); setYear(""); setSort("name_asc"); }}
                 className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
               >
                 リセット

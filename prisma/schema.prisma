@@ -15,6 +15,7 @@ model User {
   reviews       Review[]
   textbooks     Textbook[]
   contributions CourseContribution[]
+  reviewLikes   ReviewLike[]
   createdAt     DateTime             @default(now())
 }
 
@@ -50,16 +51,29 @@ model Course {
 }
 
 model Review {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   content   String
   easyScore Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
   userId    String
-  course    Course   @relation(fields: [courseId], references: [id])
+  course    Course       @relation(fields: [courseId], references: [id])
   courseId  String
-  createdAt DateTime @default(now())
+  likes     ReviewLike[]
+  createdAt DateTime     @default(now())
 
   @@index([courseId])
+}
+
+model ReviewLike {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
 }
 
 model Textbook {
@@ -70,6 +84,7 @@ model Textbook {
   price       Int
   condition   String
   description String?
+  imageUrl    String?
   status      String   @default("available")
   contact     String
   seller      User     @relation(fields: [sellerId], references: [id])
@@ -111,4 +126,13 @@ model CourseContribution {
 
   @@index([courseId])
   @@index([approved])
+}
+
+model RateLimit {
+  id      String   @id @default(cuid())
+  key     String
+  count   Int      @default(1)
+  resetAt DateTime
+
+  @@index([key])
 }

@@ -18,8 +18,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
   }
 
-  const { title, author, isbn, price, condition, description, contact } = await req.json();
-
+  const { title, author, isbn, price, condition, description, contact, imageUrl } = await req.json();
   if (!title?.trim() || !price || !condition || !contact?.trim()) {
     return NextResponse.json({ error: "必須項目を入力してください" }, { status: 400 });
   }
@@ -35,6 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       price: parseInt(String(price)),
       condition,
       description: description?.trim() || null,
+      imageUrl: imageUrl || null,
       contact: contact.trim(),
       sellerId: session.user.id,
       courseId: params.id,

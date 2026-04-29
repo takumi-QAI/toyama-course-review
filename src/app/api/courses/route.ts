@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   const department = searchParams.get("department") || "";
   const semester = searchParams.get("semester") || "";
   const year = searchParams.get("year") || "";
+  const sort = searchParams.get("sort") || "name_asc";
   const page = parseInt(searchParams.get("page") || "1");
 
   const where = {
@@ -37,6 +38,12 @@ export async function GET(req: Request) {
     ],
   };
 
+  const orderBy =
+    sort === "easyScore_desc" ? { reviews: { _avg: { easyScore: "desc" as const } } }
+    : sort === "reviews_desc" ? { reviews: { _count: "desc" as const } }
+    : sort === "createdAt_desc" ? { createdAt: "desc" as const }
+    : { name: "asc" as const };
+
   const [courses, total, faculties, reviewAggregates, semesters] = await Promise.all([
     prisma.course.findMany({
       where,
@@ -44,7 +51,7 @@ export async function GET(req: Request) {
         faculty: true,
         _count: { select: { reviews: true } },
       },
-      orderBy: { name: "asc" },
+      orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),

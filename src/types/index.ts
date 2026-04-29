@@ -29,6 +29,8 @@ export interface Review {
   user: { id: string; name: string };
   courseId: string;
   createdAt: Date;
+  likeCount?: number;
+  likedByMe?: boolean;
 }
 
 export interface Textbook {
@@ -39,6 +41,7 @@ export interface Textbook {
   price: number;
   condition: string;
   description?: string | null;
+  imageUrl?: string | null;
   status: string;
   contact: string;
   seller: { id: string; name: string };

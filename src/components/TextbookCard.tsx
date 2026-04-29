@@ -48,6 +48,11 @@ export default function TextbookCard({
 
   return (
     <div className={`bg-white rounded-2xl border p-5 transition-all ${isSold ? "opacity-50 border-slate-200" : "border-slate-200 hover:shadow-md"}`}>
+      {textbook.imageUrl && (
+        <div className="mb-3 rounded-xl overflow-hidden bg-slate-100">
+          <img src={textbook.imageUrl} alt={textbook.title} className="w-full max-h-40 object-cover" />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-slate-900 leading-snug">{textbook.title}</h4>

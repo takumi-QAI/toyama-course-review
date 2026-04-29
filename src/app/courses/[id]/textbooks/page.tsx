@@ -28,6 +28,10 @@ export default function TextbooksPage() {
   const [condition, setCondition] = useState("良好");
   const [description, setDescription] = useState("");
   const [contact, setContact] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const blobEnabled = !!process.env.NEXT_PUBLIC_BLOB_ENABLED;
 
   useEffect(() => {
     async function load() {
@@ -42,6 +46,13 @@ export default function TextbooksPage() {
     load();
   }, [id]);
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !price || !contact.trim()) {
@@ -51,10 +62,22 @@ export default function TextbooksPage() {
     setSubmitting(true);
     setSubmitError(null);
 
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      setUploadingImage(true);
+      const fd = new FormData();
+      fd.append("file", imageFile);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      const uploadData = await uploadRes.json();
+      setUploadingImage(false);
+      if (!uploadRes.ok) { setSubmitError(uploadData.error); setSubmitting(false); return; }
+      imageUrl = uploadData.url;
+    }
+
     const res = await fetch(`/api/courses/${id}/textbooks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, author, isbn, price: parseInt(price), condition, description, contact }),
+      body: JSON.stringify({ title, author, isbn, price: parseInt(price), condition, description, contact, imageUrl }),
     });
     const data = await res.json();
 
@@ -67,6 +90,7 @@ export default function TextbooksPage() {
     setTextbooks((prev) => [data, ...prev]);
     setTitle(""); setAuthor(""); setIsbn(""); setPrice("");
     setCondition("良好"); setDescription(""); setContact("");
+    setImageFile(null); setImagePreview(null);
     setShowForm(false);
     setSubmitting(false);
   }
@@ -187,6 +211,26 @@ export default function TextbooksPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                教科書の画像（任意）
+                {!blobEnabled && <span className="text-xs text-slate-400 ml-2">※ Vercel Blob 未設定のため無効</span>}
+              </label>
+              {blobEnabled && (
+                <>
+                  <input type="file" accept="image/*" onChange={handleImageChange}
+                    className="w-full text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                  {imagePreview && (
+                    <div className="mt-2 relative inline-block">
+                      <img src={imagePreview} alt="preview" className="w-32 h-32 object-cover rounded-xl border border-slate-200" />
+                      <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-slate-700 text-white rounded-full text-xs flex items-center justify-center">×</button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 連絡先（メールアドレス等） <span className="text-red-500">*</span>
               </label>
               <input
@@ -200,10 +244,10 @@ export default function TextbooksPage() {
             {submitError && <p className="text-sm text-red-500">{submitError}</p>}
 
             <button
-              type="submit" disabled={submitting}
+              type="submit" disabled={submitting || uploadingImage}
               className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm font-medium"
             >
-              {submitting ? "出品中..." : "出品する"}
+              {uploadingImage ? "画像アップロード中..." : submitting ? "出品中..." : "出品する"}
             </button>
           </form>
         </div>

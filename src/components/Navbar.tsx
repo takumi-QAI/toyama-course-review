@@ -10,6 +10,10 @@ const NAV_LINKS = [
   { href: "/contact", label: "お問い合わせ" },
 ];
 
+const AUTH_NAV_LINKS = [
+  { href: "/mypage", label: "マイページ" },
+];
+
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -44,6 +48,11 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          {session && AUTH_NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${pathname === link.href ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`}>
+              {link.label}
+            </Link>
+          ))}
           {isAdmin && (
             <Link
               href="/admin"
@@ -58,7 +67,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-2">
           {session ? (
             <>
-              <span className="text-sm text-slate-500">{session.user?.name}</span>
+              <span className="text-sm text-slate-500 max-w-[120px] truncate">{session.user?.name}</span>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
@@ -108,6 +117,11 @@ export default function Navbar() {
               onClick={() => setOpen(false)}
               className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
             >
+              {link.label}
+            </Link>
+          ))}
+          {session && AUTH_NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
               {link.label}
             </Link>
           ))}
