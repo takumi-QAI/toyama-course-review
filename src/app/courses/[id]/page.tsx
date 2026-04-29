@@ -160,8 +160,8 @@ export default function CourseDetailPage() {
         </div>
       )}
 
-      {/* Ad */}
-      <AdUnit slot="1234567890" format="horizontal" className="mb-5 min-h-[90px]" />
+      {/* Ad – ヘッダー下 */}
+      <AdUnit slotKey="COURSE_DETAIL_TOP" format="horizontal" className="mb-5" />
 
       {/* AI Summary */}
       <div className="mb-5">
@@ -178,6 +178,9 @@ export default function CourseDetailPage() {
           onSuccess={handleReviewSuccess}
         />
       </div>
+
+      {/* Ad – 口コミ下 */}
+      <AdUnit slotKey="COURSE_DETAIL_BOTTOM" format="rectangle" className="mb-5" />
 
       {/* Reviews List */}
       <div>

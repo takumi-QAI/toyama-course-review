@@ -1,29 +1,41 @@
 "use client";
 
 import { useEffect } from "react";
+import { AD_SLOTS, type AdSlotKey } from "@/config/ads";
 
 type Props = {
-  slot: string;
+  /** 名前付きスロット（推奨）: ads.ts の AD_SLOTS のキー */
+  slotKey?: AdSlotKey;
+  /** スロット ID を直接指定する場合（後方互換）*/
+  slot?: string;
   format?: "auto" | "rectangle" | "horizontal";
   className?: string;
 };
 
-export default function AdUnit({ slot, format = "auto", className = "" }: Props) {
+export default function AdUnit({ slotKey, slot, format = "auto", className = "" }: Props) {
   const publisherId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  const slotId = slotKey ? AD_SLOTS[slotKey] : (slot ?? "");
+  const isReady = !!(publisherId && slotId);
 
   useEffect(() => {
-    if (!publisherId) return;
+    if (!isReady) return;
     try {
       ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
     } catch (_) {}
-  }, [publisherId]);
+  }, [isReady]);
 
-  if (!publisherId) {
+  // 未設定のときはプレースホルダーを表示
+  if (!isReady) {
     return (
       <div
-        className={`bg-gray-100 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-xs h-16 ${className}`}
+        className={`bg-slate-100 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-slate-400 text-xs min-h-[90px] ${className}`}
       >
-        広告
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-slate-300" />
+          広告スペース
+          {!publisherId && <span className="text-slate-300">（ADSENSE_ID 未設定）</span>}
+          {publisherId && !slotId && <span className="text-slate-300">（スロット ID 未設定）</span>}
+        </span>
       </div>
     );
   }
@@ -33,7 +45,7 @@ export default function AdUnit({ slot, format = "auto", className = "" }: Props)
       className={`adsbygoogle ${className}`}
       style={{ display: "block" }}
       data-ad-client={publisherId}
-      data-ad-slot={slot}
+      data-ad-slot={slotId}
       data-ad-format={format}
       data-full-width-responsive="true"
     />

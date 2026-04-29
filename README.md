@@ -226,13 +226,45 @@ NEXT_PUBLIC_ADMIN_EMAIL=your@email.com
 
 ## Google AdSense の設定
 
-1. https://adsense.google.com でサイトを申請
+### Step 1: AdSense 申請と Publisher ID 取得
+
+1. https://adsense.google.com でサイト（`toyama-course-review.vercel.app`）を申請
 2. 審査通過後、Publisher ID（`ca-pub-XXXXXXXXXX`）を取得
-3. Vercel の環境変数に追加:
+3. Vercel の環境変数に設定:
    ```
    NEXT_PUBLIC_ADSENSE_ID=ca-pub-XXXXXXXXXX
    ```
-4. 再デプロイで広告が自動表示されます（未設定時はプレースホルダーを表示）
+
+### Step 2: 広告ユニット（スロット）の作成と設定
+
+1. AdSense 管理画面 → **広告** → **広告ユニット** → 「新しい広告ユニットを作成」
+2. 用途に合わせて以下の5つを作成し、それぞれの **スロット ID（10桁の数字）** をメモ
+
+| 環境変数 | 配置場所 | 推奨フォーマット |
+|---------|---------|----------------|
+| `NEXT_PUBLIC_AD_SLOT_1` | 授業詳細ページ – ヘッダー下 | 水平バナー |
+| `NEXT_PUBLIC_AD_SLOT_2` | 授業詳細ページ – 口コミ一覧下 | レクタングル |
+| `NEXT_PUBLIC_AD_SLOT_3` | 授業一覧ページ – フィルター下 | 水平バナー |
+| `NEXT_PUBLIC_AD_SLOT_4` | ホームページ – ランキング上 | 水平バナー |
+| `NEXT_PUBLIC_AD_SLOT_5` | 教科書お譲りページ – リスト上 | 水平バナー |
+
+3. Vercel の環境変数に全て設定:
+   ```
+   NEXT_PUBLIC_AD_SLOT_1=1234567890
+   NEXT_PUBLIC_AD_SLOT_2=0987654321
+   NEXT_PUBLIC_AD_SLOT_3=1122334455
+   NEXT_PUBLIC_AD_SLOT_4=5544332211
+   NEXT_PUBLIC_AD_SLOT_5=9988776655
+   ```
+
+4. 再デプロイで各スポットに広告が表示されます
+
+> **未設定時の動作**: `NEXT_PUBLIC_ADSENSE_ID` またはスロット ID が未設定のスポットには「広告スペース」プレースホルダーが表示されます。スロットごとに個別に ON/OFF できます。
+
+### スロット設定の場所（コード）
+
+広告の配置場所やフォーマットは `src/config/ads.ts` で一元管理しています。
+スロット ID の追加・変更はこのファイルを見れば全て把握できます。
 
 ---
 
@@ -250,7 +282,12 @@ GitHub の `main` ブランチへの push で自動デプロイされます。
 | `ADMIN_EMAIL` | 管理者のメールアドレス |
 | `NEXT_PUBLIC_ADMIN_EMAIL` | 同上（クライアント側用） |
 | `GROQ_API_KEY` | Groq の API キー |
-| `NEXT_PUBLIC_ADSENSE_ID` | AdSense Publisher ID（任意） |
+| `NEXT_PUBLIC_ADSENSE_ID` | AdSense Publisher ID |
+| `NEXT_PUBLIC_AD_SLOT_1` | 授業詳細ページ上部のスロット ID |
+| `NEXT_PUBLIC_AD_SLOT_2` | 授業詳細ページ口コミ下のスロット ID |
+| `NEXT_PUBLIC_AD_SLOT_3` | 授業一覧ページのスロット ID |
+| `NEXT_PUBLIC_AD_SLOT_4` | ホームページのスロット ID |
+| `NEXT_PUBLIC_AD_SLOT_5` | 教科書ページのスロット ID |
 
 ### 手動で再デプロイ
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import CourseCard from "@/components/CourseCard";
+import AdUnit from "@/components/AdUnit";
 import { PageLoading } from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 import type { Course, Faculty } from "@/types";
@@ -114,6 +115,9 @@ export default function CoursesPage() {
           </div>
         </div>
       </div>
+
+      {/* Ad below filters */}
+      <AdUnit slotKey="COURSE_LIST" format="horizontal" className="mb-6" />
 
       {loading ? (
         <PageLoading />

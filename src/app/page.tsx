@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CourseCard from "@/components/CourseCard";
+import AdUnit from "@/components/AdUnit";
 
 async function getTopCourses() {
   const reviews = await prisma.review.groupBy({
@@ -130,6 +131,9 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
+
+        {/* Ad */}
+        <AdUnit slotKey="HOME" format="horizontal" className="mb-10" />
 
         {/* Top Rated */}
         {topCourses.length > 0 && (

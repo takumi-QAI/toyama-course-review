@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import TextbookCard from "@/components/TextbookCard";
+import AdUnit from "@/components/AdUnit";
 import type { Textbook, Course } from "@/types";
 
 const CONDITIONS = ["美品", "良好", "普通", "難あり"] as const;
@@ -215,6 +216,9 @@ export default function TextbooksPage() {
           {" "}が必要です
         </div>
       )}
+
+      {/* Ad */}
+      <AdUnit slotKey="TEXTBOOKS" format="horizontal" className="mb-6" />
 
       {/* Available */}
       <div className="mb-8">
