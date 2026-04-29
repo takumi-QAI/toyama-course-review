@@ -24,7 +24,15 @@ export async function GET(req: Request) {
         : {},
       facultyId ? { facultyId } : {},
       department ? { department: { contains: department, mode: "insensitive" as const } } : {},
-      semester ? { semester: { contains: semester } } : {},
+      semester
+        ? (() => {
+            // "第3ターム" → contains "第3" で複合ターム（第3・第4ターム等）もヒット
+            const termMatch = semester.match(/^第(\d+)ターム$/);
+            return termMatch
+              ? { semester: { contains: `第${termMatch[1]}` } }
+              : { semester };
+          })()
+        : {},
       year ? { year: parseInt(year) } : {},
     ],
   };
@@ -72,15 +80,27 @@ export async function GET(req: Request) {
       }).then((rows) => rows.map((r) => r.department).filter(Boolean) as string[])
     : [];
 
-  // 複合ターム（第3・第4ターム）を個別に展開してドロップダウン用リストを生成
+  // 複合ターム（第3・第4ターム, 第1～第3ターム 等）を個別に展開
   const semesterSet = new Set<string>();
   for (const { semester: s } of semesters) {
     if (!s) continue;
-    const parts = s.match(/第[0-9０-９]+ターム/g);
-    if (parts) {
-      parts.forEach((p) => semesterSet.add(p));
+    // 全角正規化
+    const normalized = s.replace(/[０-９]/g, (c) =>
+      String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+    );
+    // 個別ターム番号を全て抽出（第3・第4ターム → [3,4]、第1～第3ターム → [1,2,3]）
+    const termNums = normalized.match(/\d+/g)?.map(Number);
+    if (termNums && normalized.includes("ターム")) {
+      if (normalized.includes("～")) {
+        // 範囲: 第1～第3ターム → 1,2,3
+        const [min, max] = [Math.min(...termNums), Math.max(...termNums)];
+        for (let i = min; i <= max; i++) semesterSet.add(`第${i}ターム`);
+      } else {
+        // 列挙: 第3・第4ターム → 3,4
+        termNums.forEach((n) => semesterSet.add(`第${n}ターム`));
+      }
     } else {
-      semesterSet.add(s);
+      semesterSet.add(normalized);
     }
   }
 

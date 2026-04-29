@@ -306,13 +306,17 @@ function parseCourseDetail(html: string): CourseDetail | null {
   // 学期: "2026年度／Academic Year 前期／Spring" → "前期"
   //       "2026年度 第1ターム／1st Term"        → "第1ターム"
   const rawSemester = getValue("開講学期");
-  // 複合ターム（第3・第4ターム）を先にマッチさせる
-  const semesterMatch = rawSemester.match(
-    /(前期集中|後期集中|前期・後期|第\d+・第\d+ターム|第\d+ターム|前期|後期|通年|集中)/
+  // 全角数字を半角に正規化してからマッチ（第１ターム → 第1ターム）
+  const normalizedSemester = rawSemester.replace(/[０-９]/g, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+  );
+  // 複合ターム（第3・第4ターム, 第1～第3ターム 等）を先にマッチ
+  const semesterMatch = normalizedSemester.match(
+    /(前期集中|後期集中|前期・後期|第\d+[・～][・～\d第]*ターム|第\d+ターム|前期|後期|通年|集中)/
   );
   const semester = semesterMatch
     ? semesterMatch[1]
-    : rawSemester
+    : normalizedSemester
         .replace(/Academic Year\s*/g, "")
         .replace(/\d{4}年度[\/／\s]*/g, "")
         .split(/[\/／]/)[0]
